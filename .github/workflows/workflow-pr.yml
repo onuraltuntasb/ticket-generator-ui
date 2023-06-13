@@ -9,7 +9,7 @@
 name: React
 
 on:
-  push:
+  pull_request:
     branches: ['main']
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
           node-version: '18'
           cache: 'npm'
       - name: Npm install
-        run: npm ci
+        run: npm install
       - name: Npm test
         run: npm test
       - name: Build
