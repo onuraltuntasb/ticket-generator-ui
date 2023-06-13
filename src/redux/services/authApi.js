@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 
-const REACT_APP_BACKEND_HOST_PORT = ''
+var REACT_APP_BACKEND_HOST_PORT = ''
 
 if (process.env.NODE_ENV !== 'production') {
   REACT_APP_BACKEND_HOST_PORT = process.env.REACT_APP_BACKEND_HOST_PORT_DEV
