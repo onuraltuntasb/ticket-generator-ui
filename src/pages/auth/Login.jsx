@@ -1,10 +1,20 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 import TextField from '@mui/material/TextField'
 
 const Login = () => {
+  useEffect(() => {
+    fetchText()
+  }, [])
+
+  async function fetchText() {
+    let response = await fetch('/readme.txt')
+    let data = await response.text()
+    console.log(data)
+  }
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Grid container spacing={3}>
