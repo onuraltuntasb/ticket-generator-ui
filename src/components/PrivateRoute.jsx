@@ -1,41 +1,55 @@
-import React, { useEffect, useState } from 'react'
-import LoadingToRedirect from './LoginToRedirect'
+import React, { useEffect, useState } from 'react';
+import LoadingToRedirect from './LoginToRedirect';
+import { sendAuthUserData } from 'redux/features/authSlice';
+import { useDispatch } from 'react-redux';
+import { useSnackbar } from 'notistack';
 
-const PrivateRoute = ({ children }) => {
-  const [isTokenValid, setisTokenValid] = useState(false)
+const PrivateRoute = (props) => {
+    const { children, notRedirect } = props;
 
-  let token = ''
-  let email = ''
-  let user = { name: '', token: '' }
+    const dispatch = useDispatch();
+    const { enqueueSnackbar } = useSnackbar();
 
-  useEffect(() => {
-    if (localStorage.getItem('user')) {
-      user = JSON.parse(localStorage.getItem('user'))
-      console.log(user)
-      token = user.token
-      email = user.name
-      console.log(user.name, 'token')
+    const [isTokenValid, setisTokenValid] = useState(false);
+
+    async function fetchText() {
+        try {
+            let response = await fetch('/api/user/check');
+            if (response.status === 200) {
+                const result = await response.json();
+                dispatch(sendAuthUserData(result));
+                setisTokenValid(true);
+            }
+        } catch (error) {
+            dispatch(sendAuthUserData(null));
+            enqueueSnackbar('Authentication failed!', { variant: 'error' });
+            //console.log(error);
+        }
     }
-    if (token) {
-      fetch('http://localhost:8080/api/auth/check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: token, email: email }),
-      })
-        .then((response) => {
-          if (response.ok) {
-            setisTokenValid(true)
-          }
-        })
-        .catch((error) => {
-          console.error('Error:', error)
-        })
-    }
-  }, [])
 
-  return isTokenValid ? children : <LoadingToRedirect />
-}
+    useEffect(() => {
+        fetchText();
+    }, []);
 
-export default PrivateRoute
+    const childrenWithProps = React.Children.map(children, (child) =>
+        React.cloneElement(child, {
+            isAuthenticated: isTokenValid
+        })
+    );
+
+    const renderReturn = () => {
+        if (isTokenValid) {
+            return childrenWithProps;
+        } else {
+            if (notRedirect) {
+                return childrenWithProps;
+            } else {
+                return <LoadingToRedirect />;
+            }
+        }
+    };
+
+    return renderReturn();
+};
+
+export default PrivateRoute;

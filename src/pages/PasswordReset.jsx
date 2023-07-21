@@ -3,80 +3,85 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import { useForm, FormProvider } from 'react-hook-form';
 import { object, string } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LinkItem, OauthMuiLink } from './Register';
 import FormInput from 'components/mui-rhf/FormInput';
 import { useNavigate } from 'react-router-dom';
-import { useLoginUserMutation } from 'redux/services/authApi';
+import { useResetPasswordMutation } from 'redux/services/authApi';
 import { useEffect, useState } from 'react';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import TopBar from 'components/TopBar';
 import Footer from 'components/Footer';
-import { sendAuthUserData } from 'redux/features/authSlice';
-import { useDispatch } from 'react-redux';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
-const Login = (props) => {
+const PasswordReset = (props) => {
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
-    const dispatch = useDispatch();
 
+    const [resetPasswordErrorData, setresetPasswordErrorData] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
-    const [loginUserErrorData, setloginUserErrorData] = useState(null);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [
-        loginUser,
+        resetPassword,
         {
-            data: loginData,
-            isSuccess: isLoginSuccess,
-            isError: isLoginError,
-            error: loginErrorData,
-            isLoading: isLoginLoading
+            isSuccess: isResetPasswordSuccess,
+            isError: isResetPasswordError,
+            error: resetPasswordError,
+            isLoading: isResetPasswordLoading
         }
-    ] = useLoginUserMutation();
+    ] = useResetPasswordMutation();
 
     useEffect(() => {
-        if (isLoginError && loginErrorData) {
-            setloginUserErrorData(loginErrorData?.data?.errors);
+        if (isResetPasswordError && resetPasswordError) {
+            setresetPasswordErrorData(resetPasswordError?.data?.errors);
         }
-    }, [isLoginError, loginErrorData]);
+    }, [isResetPasswordError, resetPasswordError]);
 
     useEffect(() => {
-        if (isLoginSuccess) {
-            //console.log('User login successfull!', loginData);
-            enqueueSnackbar('User login successfull!', { variant: 'success' });
-            localStorage.setItem('eg-auth-infos', loginData.email);
-            dispatch(sendAuthUserData(loginData));
-            navigate('/dashboard');
-        } else if (isLoginError) {
-            //console.log('User login error!', JSON.stringify(loginErrorData));
-            enqueueSnackbar('User login error!', { variant: 'error' });
+        if (isResetPasswordSuccess) {
+            navigate('/login');
+            enqueueSnackbar('Password reset successfully', { variant: 'success' });
+        } else if (isResetPasswordError) {
+            enqueueSnackbar('Password reset fail', { variant: 'error' });
         }
-    }, [isLoginSuccess, isLoginError]);
+    }, [isResetPasswordSuccess, isResetPasswordError]);
 
     const onSubmitHandler = (values) => {
-        loginUser({
-            email: values.email,
-            name: 'onur1234',
-            password: values.password
+        const queryString = window.location.href;
+        var output = queryString.split('/');
+        var token = output[output.length - 1];
+
+        console.log('bastım');
+
+        resetPassword({
+            token: token,
+            newPassword: values.newPassword,
+            confirmNewPassword: values.confirmNewPassword
         });
         //console.log(values);
     };
 
     const defaultValues = {
-        email: '',
-        password: ''
+        token: '',
+        newPassword: '',
+        confirmNewPassword: ''
     };
 
-    const loginSchema = object({
-        email: string().min(1, 'Email is required').email('Email is invalid'),
-        password: string()
-            .min(1, 'Password is required')
-            .min(10, 'Password must be more than 8 characters')
-            .max(32, 'Password must be less than 32 characters')
+    const resetPasswordSchema = object({
+        newPassword: string()
+            .min(1, 'newPassword is required')
+            .min(10, 'newPassword must be more than 10 characters')
+            .max(32, 'newPassword must be less than 32 characters'),
+        confirmNewPassword: string()
+            .min(1, 'Please confirm your password')
+            .min(10, 'newPassword must be more than 10 characters')
+            .max(32, 'newPassword must be less than 32 characters')
+    }).refine((data) => data.password === data.passwordConfirm, {
+        path: ['confirmNewPassword'],
+        message: 'Confirm new password do not match'
     });
 
     const methods = useForm({
-        resolver: zodResolver(loginSchema),
+        resolver: zodResolver(resetPasswordSchema),
         defaultValues
     });
 
@@ -105,7 +110,7 @@ const Login = (props) => {
                                         marginInline: 'auto'
                                     }}
                                 >
-                                    <Grid item xs={12} sm={6} sx={{ borderRight: { sm: '1px solid #ddd' } }}>
+                                    <Grid item xs={12}>
                                         <Box
                                             display="flex"
                                             flexDirection="column"
@@ -120,33 +125,22 @@ const Login = (props) => {
                                                 component="h1"
                                                 sx={{ textAlign: 'center', mb: '1.5rem' }}
                                             >
-                                                Log into your account
+                                                Password Reset
                                             </Typography>
                                             <FormInput
-                                                label="Enter your email"
-                                                type="email"
-                                                name="email"
-                                                focused
+                                                label="New Password"
+                                                name="newPassword"
                                                 required
+                                                focused
                                                 sx={{ mb: '16px' }}
-                                            />
-                                            <FormInput
-                                                label="Password"
-                                                name="password"
-                                                required
-                                                focused
                                                 type={showPassword ? 'text' : 'password'}
                                                 InputProps={{
                                                     endAdornment: (
                                                         <InputAdornment position="end">
                                                             <IconButton
                                                                 aria-label="toggle password visibility"
-                                                                onClick={() => {
-                                                                    setShowPassword((show) => !show);
-                                                                }}
-                                                                onMouseDown={(event) => {
-                                                                    event.preventDefault();
-                                                                }}
+                                                                onClick={() => setShowPassword(!showPassword)}
+                                                                onMouseDown={(event) => event.preventDefault}
                                                             >
                                                                 {showPassword ? <VisibilityOff /> : <Visibility />}
                                                             </IconButton>
@@ -154,8 +148,34 @@ const Login = (props) => {
                                                     )
                                                 }}
                                             />
+                                            <FormInput
+                                                label="Confirm Password"
+                                                name="confirmNewPassword"
+                                                required
+                                                focused
+                                                type={showConfirmPassword ? 'text' : 'password'}
+                                                InputProps={{
+                                                    endAdornment: (
+                                                        <InputAdornment position="end">
+                                                            <IconButton
+                                                                aria-label="toggle password visibility"
+                                                                onClick={() =>
+                                                                    setShowConfirmPassword(!showConfirmPassword)
+                                                                }
+                                                                onMouseDown={(event) => event.preventDefault}
+                                                            >
+                                                                {showConfirmPassword ? (
+                                                                    <VisibilityOff />
+                                                                ) : (
+                                                                    <Visibility />
+                                                                )}
+                                                            </IconButton>
+                                                        </InputAdornment>
+                                                    )
+                                                }}
+                                            />
                                             <LoadingButton
-                                                loading={isLoginLoading}
+                                                loading={isResetPasswordLoading}
                                                 type="submit"
                                                 variant="contained"
                                                 sx={{
@@ -164,48 +184,27 @@ const Login = (props) => {
                                                     marginInline: 'auto'
                                                 }}
                                             >
-                                                Login
+                                                Reset password
                                             </LoadingButton>
-                                            {loginUserErrorData ? (
+                                            {isResetPasswordError ? (
                                                 <Alert sx={{ mt: '8px' }} severity="error">
                                                     <AlertTitle>Error</AlertTitle>
-                                                    {JSON.stringify(loginUserErrorData)}
+                                                    {JSON.stringify(resetPasswordErrorData)}
                                                     <strong>check it out!</strong>
                                                 </Alert>
                                             ) : null}{' '}
                                         </Box>
                                     </Grid>
                                     <Grid item xs={12} sm={6}>
-                                        <Typography
-                                            variant="h6"
-                                            component="p"
-                                            sx={{
-                                                paddingLeft: { sm: '3rem' },
-                                                mb: '1.5rem',
-                                                textAlign: 'center'
-                                            }}
-                                        >
-                                            Log in with another provider:
-                                        </Typography>
                                         <Box
                                             display="flex"
                                             flexDirection="column"
                                             sx={{ paddingLeft: { sm: '3rem' }, rowGap: '1rem' }}
-                                        >
-                                            <OauthMuiLink href="">Google</OauthMuiLink>
-                                            <OauthMuiLink href="">GitHub</OauthMuiLink>
-                                        </Box>
+                                        ></Box>
                                     </Grid>
                                 </Grid>
                                 <Grid container justifyContent="center">
-                                    <Stack sx={{ mt: '3rem', textAlign: 'center' }}>
-                                        <Typography sx={{ fontSize: '0.9rem', mb: '1rem' }}>
-                                            Need an account? <LinkItem to="/register">Sign up here</LinkItem>
-                                        </Typography>
-                                        <Typography sx={{ fontSize: '0.9rem' }}>
-                                            Forgot your <LinkItem to="/forgotPassword">password?</LinkItem>
-                                        </Typography>
-                                    </Stack>
+                                    <Stack sx={{ mt: '3rem', textAlign: 'center' }}></Stack>
                                 </Grid>
                             </Grid>
                         </FormProvider>
@@ -217,4 +216,4 @@ const Login = (props) => {
     );
 };
 
-export default Login;
+export default PasswordReset;

@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
-    "module": "ES6",
-    "jsx": "preserve"
+    "module": "commonjs",
+    "target": "es2016",
+    "jsx": "preserve",
+    "baseUrl": "./src",
+    "checkJs": false
   },
   "exclude": ["node_modules", "**/node_modules/*"]
 }
